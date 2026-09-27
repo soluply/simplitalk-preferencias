@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <title>Preferências de e-mail</title>
+  <style>
+    :root {
+      --bg: #F4F1EA;
+      --card: #ffffff;
+      --ink: #12302a;
+      --muted: #5b6b66;
+      --brand: #023B2B;
+      --line: #e5e0d5;
+      color-scheme: light;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #04160f; --card: #0b2219; --ink: #f4f1ea; --muted: #b7c2bd; --brand: #C2E530; --line: #1c3a2f; color-scheme: dark; }
+      button.primary { color: #023B2B !important; }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--ink);
+      font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; display: grid; place-items: start center; }
+    main { width: 100%; max-width: 480px; margin: 48px 16px; background: var(--card); border: 1px solid var(--line);
+      border-radius: 16px; padding: 32px 28px; }
+    h1 { font-size: 21px; line-height: 1.3; margin: 0 0 12px; }
+    p { margin: 0 0 12px; }
+    .muted { color: var(--muted); font-size: 14px; }
+    button.primary { margin-top: 12px; background: var(--brand); color: #fff; border: 0; border-radius: 10px;
+      padding: 12px 20px; font: 600 15px system-ui, sans-serif; cursor: pointer; }
+    button.primary:disabled { opacity: .6; cursor: wait; }
+    b { word-break: break-all; }
+  </style>
+</head>
+<body>
+  <main id="box" aria-live="polite">
+    <p class="muted">Carregando…</p>
+  </main>
+  <script>
+    // Página de descadastro do Simplitalk Campanhas. Só conversa com a função pública do app;
+    // não guarda nada no navegador. Quem descadastra é o POST do botão, nunca a simples abertura do link.
+    (function () {
+      var API = "https://eqzwchakzitxndencoxc.supabase.co/functions/v1/campanhas-publico/u/";
+      var box = document.getElementById("box");
+      var token = new URLSearchParams(location.search).get("t") || "";
+
+      function esc(v) {
+        return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) {
+          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+        });
+      }
+      function show(title, html) {
+        box.innerHTML = "<h1>" + esc(title) + "</h1>" + html;
+      }
+      function failed() {
+        show("Não foi possível carregar", "<p>Tente de novo em alguns minutos. Se preferir, responda ao e-mail pedindo o descadastro.</p>");
+      }
+
+      if (!/^[a-z0-9]{5,64}$/i.test(token)) {
+        return show("Link incompleto", "<p>Abra o link de descadastro direto do e-mail que você recebeu.</p>");
+      }
+
+      fetch(API + token + "/info")
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (d.status === "test") return show("Link de teste", "<p>Este link veio de um e-mail de teste. Nada foi alterado.</p>");
+          if (d.status === "invalid") return show("Link inválido", "<p>Não encontramos este link. Se quiser parar de receber, responda ao e-mail pedindo o descadastro.</p>");
+          if (d.status === "already") {
+            return show("Você já está descadastrado", "<p>O endereço <b>" + esc(d.email) + "</b> não recebe mais e-mails de marketing de " + esc(d.company) + ".</p>");
+          }
+          show("Não quer mais receber estes e-mails?",
+            "<p>Confirme abaixo e o endereço <b>" + esc(d.email) + "</b> deixa de receber e-mails de marketing de " + esc(d.company) + ".</p>" +
+            '<button class="primary" id="go">Confirmar descadastro</button>' +
+            '<p class="muted" style="margin-top:16px">E-mails sobre pedidos e atendimento em andamento continuam chegando normalmente.</p>');
+          document.getElementById("go").addEventListener("click", function (ev) {
+            ev.target.disabled = true;
+            fetch(API + token, { method: "POST", headers: { "Content-Type": "application/json" }, body: '{"confirm":true}' })
+              .then(function (r) { return r.json(); })
+              .then(function (x) {
+                if (x.status !== "done") return failed();
+                show("Pronto, descadastro feito", "<p>O endereço <b>" + esc(x.email) + "</b> não vai mais receber e-mails de marketing de " + esc(x.company) + ".</p>");
+              })
+              .catch(failed);
+          });
+        })
+        .catch(failed);
+    })();
+  </script>
+</body>
+</html>
