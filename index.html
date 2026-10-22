@@ -42,8 +42,13 @@
     // Página de descadastro do Simplitalk Campanhas. Só conversa com a função pública do app;
     // não guarda nada no navegador. Quem descadastra é o POST do botão, nunca a simples abertura do link.
     (function () {
-      // Dois projetos usam esta página (versão Vibe e app do Bitrix24): o link diz qual em "a", e só os nossos valem.
-      var PROJECTS = ["https://eqzwchakzitxndencoxc.supabase.co", "https://tdponmwmpnvfzcnldqre.supabase.co"];
+      // Três projetos usam esta página (versão Vibe, app do Bitrix24 e módulo do Simplitalk): o link diz qual em "a",
+      // e só os nossos valem.
+      var PROJECTS = [
+        "https://eqzwchakzitxndencoxc.supabase.co",
+        "https://tdponmwmpnvfzcnldqre.supabase.co",
+        "https://yxgqwgxhqdvkbktpuabe.supabase.co",
+      ];
       var params = new URLSearchParams(location.search);
       var base = PROJECTS.indexOf(params.get("a")) >= 0 ? params.get("a") : PROJECTS[0];
       var API = base + "/functions/v1/campanhas-publico/u/";
